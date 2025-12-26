@@ -1,5 +1,5 @@
 // CONFIGURATION
-const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkB-VFvdDRm-bWJDxliTPUE3QnOMuCIM9BR7i4ypvX-sp5fwnW3TPFA4KLNBK44qDVfkdvkEdqzQI9/pub?output=csv"; // <--- PASTE LINK HERE
+const GOOGLE_SHEET_URL = "YOUR_GOOGLE_SHEETS_CSV_LINK_HERE"; // <--- PASTE LINK HERE
 
 const TEAMS_DEFAULT = ["The Teapots", "Earl Grey's Anatomy", "Brew Crew", "Chai Hards"];
 
@@ -37,6 +37,9 @@ let timerInterval;
 
 // 1. INITIALIZATION
 function init() {
+    // NEW: Force Timer to 20s Default
+    timerInput.value = 20;
+    
     loadLeaderboard();
     
     // Check if URL is still the placeholder
@@ -122,7 +125,6 @@ function processData(data) {
 function updateDisplay() {
     if (!rounds || rounds.length === 0) return;
 
-    // Trigger Animation Flash (Visual Feedback)
     quizCard.classList.remove("animate__fadeIn");
     void quizCard.offsetWidth; 
     quizCard.classList.add("animate__fadeIn");
@@ -148,7 +150,6 @@ function updateDisplay() {
         btnAction.innerText = "Start Round";
         btnPrev.disabled = currentRoundIdx === 0;
         
-        // Reset timer display text
         timerDisplay.innerText = timerInput.value;
         
     } else {
@@ -164,7 +165,6 @@ function updateDisplay() {
             timerDisplay.innerText = timerInput.value;
             
         } else if (viewState === "QUESTION_VISIBLE" || viewState === "TIMER_RUNNING") {
-            // NOTE: We share logic here so the layout doesn't break during timer
             mainText.innerText = qData.q;
             if(qData.img) {
                 qImage.src = qData.img;
@@ -181,7 +181,6 @@ function updateDisplay() {
             });
             answerReveal.style.display = "none";
             
-            // Set button text based on state
             if(viewState === "TIMER_RUNNING") {
                 btnAction.innerText = "Reveal Answer";
             } else {
@@ -218,8 +217,6 @@ btnAction.addEventListener("click", () => {
             
         case "QUESTION_VISIBLE":
             viewState = "TIMER_RUNNING";
-            // IMPORTANT: We do NOT call updateDisplay() here to avoid resetting animations.
-            // We just update the button text and start the timer manually.
             btnAction.innerText = "Reveal Answer";
             startTimer(); 
             break;
@@ -238,17 +235,14 @@ btnAction.addEventListener("click", () => {
 
 // 4. TIMER LOGIC
 function startTimer() {
-    // 1. Clear any existing timer just in case
     clearInterval(timerInterval);
     
-    // 2. Get value
-    let timeLeft = parseInt(timerInput.value) || 10;
+    // UPDATED: Default fallback to 20
+    let timeLeft = parseInt(timerInput.value) || 20;
     timerDisplay.innerText = timeLeft;
     
-    // 3. Play sound (Safely)
     try { tickSound.play().catch(e => {}); } catch(e){}
     
-    // 4. Start Interval
     timerInterval = setInterval(() => {
         timeLeft--;
         timerDisplay.innerText = timeLeft;
@@ -263,7 +257,6 @@ function startTimer() {
 function stopTimer() {
     clearInterval(timerInterval);
     if(tickSound) { tickSound.pause(); tickSound.currentTime = 0; }
-    // We purposely do NOT reset the timer text here, so you can see where it stopped.
 }
 
 // 5. NAVIGATION LOGIC
