@@ -33,9 +33,12 @@ const questions = [
 const questionElement = document.getElementById("question");
 const answerButtons = document.getElementById("answer-buttons");
 const nextButton = document.getElementById("next-btn");
+const timerElement = document.getElementById("timer"); // NEW
 
 let currentQuestionIndex = 0;
 let score = 0;
+let timeLeft = 10; // NEW: Initial time
+let timerInterval; // NEW: Variable to hold the timer
 
 // 3. Functions
 function startQuiz() {
@@ -46,19 +49,19 @@ function startQuiz() {
 }
 
 function showQuestion() {
-    resetState(); // Clear previous answers
+    resetState();
+    startTimer(); // NEW: Start the timer when question loads
+    
     let currentQuestion = questions[currentQuestionIndex];
     let questionNo = currentQuestionIndex + 1;
     questionElement.innerHTML = questionNo + ". " + currentQuestion.question;
 
-    // Create a button for each answer
     currentQuestion.answers.forEach(answer => {
         const button = document.createElement("button");
         button.innerHTML = answer.text;
         button.classList.add("btn");
         answerButtons.appendChild(button);
         
-        // Add data attribute if true so we can check it later
         if(answer.correct) {
             button.dataset.correct = answer.correct;
         }
@@ -68,16 +71,54 @@ function showQuestion() {
 
 function resetState() {
     nextButton.style.display = "none";
+    clearInterval(timerInterval); // NEW: Stop any existing timer
+    timeLeft = 10; // NEW: Reset time
+    timerElement.innerHTML = `Time Left: ${timeLeft}s`; // NEW: Update text
+    
     while(answerButtons.firstChild) {
         answerButtons.removeChild(answerButtons.firstChild);
     }
 }
 
+// NEW: Timer Logic
+function startTimer() {
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        timerElement.innerHTML = `Time Left: ${timeLeft}s`;
+        
+        // Change color to red if time is running out
+        if (timeLeft < 4) {
+             timerElement.style.color = "#c0392b"; // Red
+             timerElement.style.borderColor = "#c0392b";
+        } else {
+             timerElement.style.color = "#5d6d7e"; // Reset color
+             timerElement.style.borderColor = "#bbdefb";
+        }
+
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            handleTimeUp();
+        }
+    }, 1000); // Run every 1000ms (1 second)
+}
+
+function handleTimeUp() {
+    // Reveal correct answer and disable buttons
+    Array.from(answerButtons.children).forEach(button => {
+        if(button.dataset.correct === "true") {
+            button.classList.add("correct");
+        }
+        button.disabled = true;
+    });
+    nextButton.style.display = "block";
+}
+
 function selectAnswer(e) {
+    clearInterval(timerInterval); // NEW: Stop timer when user clicks
+    
     const selectedBtn = e.target;
     const isCorrect = selectedBtn.dataset.correct === "true";
     
-    // Visual feedback
     if(isCorrect) {
         selectedBtn.classList.add("correct");
         score++;
@@ -85,12 +126,11 @@ function selectAnswer(e) {
         selectedBtn.classList.add("incorrect");
     }
 
-    // Show the correct answer automatically if they picked wrong
     Array.from(answerButtons.children).forEach(button => {
         if(button.dataset.correct === "true") {
             button.classList.add("correct");
         }
-        button.disabled = true; // Disable all buttons
+        button.disabled = true;
     });
 
     nextButton.style.display = "block";
@@ -99,6 +139,7 @@ function selectAnswer(e) {
 function showScore() {
     resetState();
     questionElement.innerHTML = `You scored ${score} out of ${questions.length}!`;
+    timerElement.style.display = "none"; // Hide timer on score screen
     nextButton.innerHTML = "Play Again";
     nextButton.style.display = "block";
 }
@@ -106,13 +147,13 @@ function showScore() {
 function handleNextButton() {
     currentQuestionIndex++;
     if(currentQuestionIndex < questions.length) {
+        timerElement.style.display = "inline-block"; // Show timer again
         showQuestion();
     } else {
         showScore();
     }
 }
 
-// 4. Event Listeners
 nextButton.addEventListener("click", () => {
     if(currentQuestionIndex < questions.length) {
         handleNextButton();
@@ -121,5 +162,4 @@ nextButton.addEventListener("click", () => {
     }
 });
 
-// Start the game initially
 startQuiz();
