@@ -1,131 +1,87 @@
-/* 1. Global Settings & Font */
+/* 1. Global Settings */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Verdana', 'Segoe UI', sans-serif; /* Rounder, friendlier font */
+    font-family: 'Verdana', 'Segoe UI', sans-serif;
 }
 
-/* 2. Background - Soft Pastel Mint */
 body {
-    background: #e8f5e9; /* Pastel Mint Green */
+    background: #e8f5e9; /* Pastel Mint */
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
 }
 
-/* 3. The Quiz Card - Rounded and Clean */
 .app {
     background: #fff;
     width: 90%;
     max-width: 600px;
     padding: 40px;
-    border-radius: 25px; /* Very rounded corners for a "soft" look */
-    box-shadow: 0 10px 25px rgba(0,0,0,0.05); /* Soft shadow, not harsh */
+    border-radius: 25px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    text-align: center; /* Centers everything inside */
 }
 
-/* 4. The Title - Big and Centered */
+/* Title */
 .app h1 {
-    font-size: 36px; /* Much larger */
-    color: #5d6d7e; /* Warm Slate Grey (softer than black) */
+    font-size: 28px;
+    color: #5d6d7e;
     font-weight: 700;
-    text-align: center; /* Centered */
-    border-bottom: 3px solid #b2dfdb; /* Pastel teal underline */
+    border-bottom: 3px solid #b2dfdb;
     padding-bottom: 20px;
     margin-bottom: 30px;
-    letter-spacing: 1px;
 }
 
-/* 5. The Question Text */
-.quiz-container {
-    padding: 10px 0;
+/* Timer */
+#timer {
+    font-size: 28px;
+    font-weight: 800;
+    color: #5d6d7e;
+    background: #e3f2fd;
+    padding: 15px 30px;
+    border-radius: 50px;
+    display: inline-block;
+    margin-bottom: 25px;
+    border: 4px solid #90caf9;
 }
 
+/* Question */
 #question {
     font-size: 22px;
     color: #4a4a4a;
     font-weight: 500;
     margin-bottom: 25px;
-    line-height: 1.4;
+    text-align: left; /* Keep question text aligned left for readability */
 }
 
-/* 6. The Buttons - Pastel Theme */
+/* Buttons */
 .btn {
     background: #fff;
     color: #555;
     font-weight: 500;
-    font-size: 18px; /* Larger text for easier reading */
+    font-size: 18px;
     width: 100%;
-    border: 2px solid #e0e0e0; /* Light grey border initially */
+    border: 2px solid #e0e0e0;
     padding: 15px;
-    margin: 12px 0;
+    margin: 10px 0;
     text-align: left;
-    border-radius: 15px; /* Rounded pill shape */
+    border-radius: 15px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
-/* Hover Effect - Pastel Blue */
 .btn:hover:not([disabled]) {
-    background: #e3f2fd; /* Light Pastel Blue */
+    background: #e3f2fd;
     border-color: #bbdefb;
     color: #000;
-    transform: translateY(-2px); /* Slight lift effect */
+    transform: translateY(-2px);
 }
 
-/* 7. Feedback Colors (Correct/Incorrect) */
-.correct {
-    background: #c8e6c9 !important; /* Pastel Green */
-    border-color: #a5d6a7 !important;
-    color: #1b5e20 !important;
-}
-
-.incorrect {
-    background: #ffcdd2 !important; /* Pastel Red/Pink */
-    border-color: #ef9a9a !important;
-    color: #b71c1c !important;
-}
-
-/* 8. The Next/Play Again Button */
-#next-btn {
-    background: #5d6d7e; /* Matches the title color */
-    color: #fff;
-    font-weight: 600;
-    font-size: 18px;
-    width: 200px;
-    border: 0;
-    padding: 15px;
-    margin: 30px auto 0; /* Centered */
-    border-radius: 50px; /* Fully rounded pill */
-    cursor: pointer;
-    display: block;
-    box-shadow: 0 5px 15px rgba(93, 109, 126, 0.3);
-    transition: transform 0.2s;
-}
-
-#next-btn:hover {
-    transform: scale(1.05); /* Grows slightly when hovered */
-    background: #34495e;
-}
-
-/* Make Timer Bigger and Bolder */
-#timer {
-    font-size: 28px; /* Increased from 18px */
-    font-weight: 800; /* Extra Bold */
-    color: #5d6d7e;
-    background: #e3f2fd;
-    padding: 15px 30px; /* Larger padding */
-    border-radius: 50px; /* Fully rounded */
-    display: inline-block;
-    margin-bottom: 25px;
-    border: 4px solid #90caf9; /* Thicker border */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-/* Style for the new Start Timer Button */
+/* Start Button Specifics */
 .start-btn {
-    background: #ff7043 !important; /* Bright Orange to stand out */
+    background: #ff7043 !important;
     color: white !important;
     text-align: center !important;
     font-weight: bold !important;
@@ -133,6 +89,34 @@ body {
 }
 
 .start-btn:hover {
-    background: #f4511e !important; /* Darker orange on hover */
+    background: #f4511e !important;
     transform: scale(1.02);
+}
+
+/* Feedback Colors */
+.correct {
+    background: #c8e6c9 !important;
+    border-color: #a5d6a7 !important;
+    color: #1b5e20 !important;
+}
+
+.incorrect {
+    background: #ffcdd2 !important;
+    border-color: #ef9a9a !important;
+    color: #b71c1c !important;
+}
+
+/* Next Button */
+#next-btn {
+    background: #5d6d7e;
+    color: #fff;
+    font-weight: 600;
+    font-size: 18px;
+    width: 200px;
+    border: 0;
+    padding: 15px;
+    margin: 30px auto 0;
+    border-radius: 50px;
+    cursor: pointer;
+    display: none; /* Hidden by default */
 }
