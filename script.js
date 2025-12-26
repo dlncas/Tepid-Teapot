@@ -1,5 +1,5 @@
 // CONFIGURATION
-const GOOGLE_SHEET_URL = "YOUR_GOOGLE_SHEETS_CSV_LINK_HERE"; // <--- PASTE LINK HERE
+const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkB-VFvdDRm-bWJDxliTPUE3QnOMuCIM9BR7i4ypvX-sp5fwnW3TPFA4KLNBK44qDVfkdvkEdqzQI9/pub?output=csv"; // <--- PASTE LINK HERE
 
 const TEAMS_DEFAULT = ["The Teapots", "Earl Grey's Anatomy", "Brew Crew", "Chai Hards"];
 
