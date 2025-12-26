@@ -1,5 +1,5 @@
 // CONFIGURATION
-const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkB-VFvdDRm-bWJDxliTPUE3QnOMuCIM9BR7i4ypvX-sp5fwnW3TPFA4KLNBK44qDVfkdvkEdqzQI9/pub?output=csv"; // <--- PASTE LINK HERE
+const GOOGLE_SHEET_URL = "YOUR_GOOGLE_SHEETS_CSV_LINK_HERE"; // <--- PASTE LINK HERE
 
 const TEAMS_DEFAULT = ["The Teapots", "Earl Grey's Anatomy", "Brew Crew", "Chai Hards"];
 
@@ -37,12 +37,9 @@ let timerInterval;
 
 // 1. INITIALIZATION
 function init() {
-    // NEW: Force Timer to 20s Default
-    timerInput.value = 20;
-    
+    timerInput.value = 20; // Default to 20s
     loadLeaderboard();
     
-    // Check if URL is still the placeholder
     if (GOOGLE_SHEET_URL.includes("YOUR_GOOGLE_SHEETS")) {
         alert("⚠️ WARNING: You haven't replaced the Google Sheet URL in script.js yet! Loading fallback questions instead.");
         loadFallbackData(); 
@@ -125,6 +122,7 @@ function processData(data) {
 function updateDisplay() {
     if (!rounds || rounds.length === 0) return;
 
+    // Reset Animation
     quizCard.classList.remove("animate__fadeIn");
     void quizCard.offsetWidth; 
     quizCard.classList.add("animate__fadeIn");
@@ -133,10 +131,20 @@ function updateDisplay() {
     let roundName = isLightning ? "⚡ Lightning Round ⚡" : `Round ${currentRoundIdx + 1}`;
     roundIndicator.innerText = roundName;
     
+    // Safety check
     if (!rounds[currentRoundIdx]) {
         mainText.innerText = "End of Quiz!";
         btnAction.disabled = true;
         return;
+    }
+
+    // Logic for Disabling the Back Button
+    if (currentRoundIdx === 0 && viewState === "ROUND_INTRO") {
+        btnPrev.disabled = true;
+        btnPrev.style.opacity = "0.5";
+    } else {
+        btnPrev.disabled = false;
+        btnPrev.style.opacity = "1";
     }
 
     qCounter.innerText = viewState === "ROUND_INTRO" ? "-" : `Q ${currentQIdx + 1}/${rounds[currentRoundIdx].length}`;
@@ -148,7 +156,6 @@ function updateDisplay() {
         optionsContainer.style.display = "none";
         answerReveal.style.display = "none";
         btnAction.innerText = "Start Round";
-        btnPrev.disabled = currentRoundIdx === 0;
         
         timerDisplay.innerText = timerInput.value;
         
@@ -237,7 +244,6 @@ btnAction.addEventListener("click", () => {
 function startTimer() {
     clearInterval(timerInterval);
     
-    // UPDATED: Default fallback to 20
     let timeLeft = parseInt(timerInput.value) || 20;
     timerDisplay.innerText = timeLeft;
     
@@ -259,7 +265,7 @@ function stopTimer() {
     if(tickSound) { tickSound.pause(); tickSound.currentTime = 0; }
 }
 
-// 5. NAVIGATION LOGIC
+// 5. NAVIGATION LOGIC (FIXED)
 function nextQuestion() {
     stopTimer(); 
     const currentRoundQs = rounds[currentRoundIdx];
@@ -280,16 +286,26 @@ function nextQuestion() {
     updateDisplay();
 }
 
+// === THIS IS THE FIXED "BACK" BUTTON LOGIC ===
 btnPrev.addEventListener("click", () => {
     stopTimer();
-    if (viewState !== "ROUND_INTRO" && currentQIdx > 0) {
+
+    // 1. If deep in a round (e.g. Q2, Q3...) -> Go to Prev Question
+    if (currentQIdx > 0) {
         currentQIdx--;
-        viewState = "QUESTION_HIDDEN"; 
-    } else if (currentRoundIdx > 0) {
-        currentRoundIdx--;
-        currentQIdx = rounds[currentRoundIdx].length - 1; 
+        viewState = "QUESTION_HIDDEN";
+    } 
+    // 2. If at Q1 -> Go to Round Intro
+    else if (currentQIdx === 0 && viewState !== "ROUND_INTRO") {
         viewState = "ROUND_INTRO";
     }
+    // 3. If at Round Intro -> Go to Previous Round's Last Question
+    else if (viewState === "ROUND_INTRO" && currentRoundIdx > 0) {
+        currentRoundIdx--;
+        currentQIdx = rounds[currentRoundIdx].length - 1;
+        viewState = "QUESTION_HIDDEN"; // Or ANSWER_REVEALED if you prefer
+    }
+
     updateDisplay();
 });
 
