@@ -1,4 +1,4 @@
-// 1. Question Data
+// 1. Data
 const questions = [
     {
         question: "What does HTML stand for?",
@@ -41,24 +41,41 @@ let score = 0;
 let timeLeft = 10;
 let timerInterval;
 
-// 3. Functions
+// 3. Main Functions
 
 function startQuiz() {
     currentQuestionIndex = 0;
     score = 0;
     nextButton.innerHTML = "Next";
-    showQuestion();
+    showQuestionPlaceholder();
 }
 
-function showQuestion() {
+// State 1: Show "Question X" (Big Text, Hidden Answers)
+function showQuestionPlaceholder() {
     resetState();
     
-    // Load text
+    // Add the "Big Number" style class
+    questionElement.classList.add("big-number");
+    
+    // Set text to just the number
+    let questionNo = currentQuestionIndex + 1;
+    questionElement.innerHTML = "Question " + questionNo;
+}
+
+// State 2: Show Actual Question & Answers (Triggered by Button)
+function revealQuestion() {
+    startTimerBtn.style.display = "none"; // Hide start button
+    answerButtons.style.display = "block"; // Show answers
+    
+    // Remove the "Big Number" style so text looks normal
+    questionElement.classList.remove("big-number");
+    
+    // Insert the actual question text
     let currentQuestion = questions[currentQuestionIndex];
     let questionNo = currentQuestionIndex + 1;
     questionElement.innerHTML = questionNo + ". " + currentQuestion.question;
 
-    // Create buttons (but keep hidden via CSS parent)
+    // Create the buttons
     currentQuestion.answers.forEach(answer => {
         const button = document.createElement("button");
         button.innerHTML = answer.text;
@@ -70,14 +87,15 @@ function showQuestion() {
         }
         button.addEventListener("click", selectAnswer);
     });
+
+    startTimer(); // GO!
 }
 
 function resetState() {
     nextButton.style.display = "none";
-    startTimerBtn.style.display = "block"; // Show start button
-    answerButtons.style.display = "none";  // Hide answers
+    startTimerBtn.style.display = "block"; // Ensure start button is visible
+    answerButtons.style.display = "none";
     
-    // Reset Timer Visuals
     clearInterval(timerInterval);
     timeLeft = 10;
     timerElement.innerHTML = `Time Left: ${timeLeft}s`;
@@ -89,11 +107,9 @@ function resetState() {
     }
 }
 
-// Event Listener for the Orange "Start" Button
+// Button Click Event
 startTimerBtn.addEventListener("click", () => {
-    startTimerBtn.style.display = "none"; // Hide button
-    answerButtons.style.display = "block"; // Show answers
-    startTimer(); // NOW we start the timer
+    revealQuestion();
 });
 
 function startTimer() {
@@ -114,7 +130,7 @@ function startTimer() {
 }
 
 function handleTimeUp() {
-    // Disable all buttons
+    // Disable buttons
     Array.from(answerButtons.children).forEach(button => {
         button.disabled = true;
     });
@@ -135,7 +151,6 @@ function selectAnswer(e) {
         selectedBtn.classList.add("incorrect");
     }
 
-    // Disable all buttons
     Array.from(answerButtons.children).forEach(button => {
         button.disabled = true;
     });
@@ -144,10 +159,10 @@ function selectAnswer(e) {
 }
 
 function showScore() {
-    // Clear everything
     resetState();
     startTimerBtn.style.display = "none";
     timerElement.style.display = "none";
+    questionElement.classList.add("big-number"); // Make score look big
     
     questionElement.innerHTML = `You scored ${score} out of ${questions.length}!`;
     
@@ -159,7 +174,7 @@ function handleNextButton() {
     currentQuestionIndex++;
     if(currentQuestionIndex < questions.length) {
         timerElement.style.display = "inline-block";
-        showQuestion();
+        showQuestionPlaceholder(); // Go back to "Question X" state
     } else {
         showScore();
     }
