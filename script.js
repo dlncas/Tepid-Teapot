@@ -1,5 +1,6 @@
 // CONFIGURATION
 const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkB-VFvdDRm-bWJDxliTPUE3QnOMuCIM9BR7i4ypvX-sp5fwnW3TPFA4KLNBK44qDVfkdvkEdqzQI9/pub?output=csv"; // <--- PASTE LINK HERE
+
 const TEAMS_DEFAULT = ["The Teapots", "Earl Grey's Anatomy", "Brew Crew", "Chai Hards"];
 
 // DOM Elements
@@ -28,52 +29,90 @@ const tickSound = document.getElementById("tick-sound");
 const alarmSound = document.getElementById("alarm-sound");
 
 // State
-let allQuestions = [];
-let rounds = []; // Array of arrays [[10 qs], [10 qs]...]
+let rounds = []; 
 let currentRoundIdx = 0;
-let currentQIdx = 0; // 0 to 9 within a round
-let viewState = "ROUND_INTRO"; // States: ROUND_INTRO, QUESTION_HIDDEN, QUESTION_VISIBLE, ANSWER_REVEALED
+let currentQIdx = 0; 
+let viewState = "ROUND_INTRO"; 
 let timerInterval;
 
 // 1. INITIALIZATION
 function init() {
     loadLeaderboard();
+    
+    // Check if URL is still the placeholder
+    if (GOOGLE_SHEET_URL.includes("YOUR_GOOGLE_SHEETS")) {
+        alert("⚠️ WARNING: You haven't replaced the Google Sheet URL in script.js yet! Loading fallback questions instead.");
+        loadFallbackData(); 
+        return;
+    }
+
     btnAction.innerText = "Loading...";
     btnAction.disabled = true;
 
     Papa.parse(GOOGLE_SHEET_URL, {
         download: true,
         header: true,
+        skipEmptyLines: true,
         complete: function(results) {
             processData(results.data);
             btnAction.disabled = false;
+            btnAction.innerText = "Start Round";
             updateDisplay();
+        },
+        error: function(err) {
+            alert("❌ Error loading Google Sheet. Check the Console.");
+            console.error(err);
+            loadFallbackData(); 
         }
     });
 }
 
-function processData(data) {
-    // 1. Clean Data
-    const cleanQs = data.filter(r => r.Question).map(r => ({
-        q: r.Question,
-        img: r.ImageURL,
-        opts: [r.Option1, r.Option2, r.Option3, r.Option4],
-        ans: r.CorrectAnswer
-    }));
+function loadFallbackData() {
+    const fallbackQs = [
+        { Question: "Fallback Q1: What color is the sky?", Option1: "Red", Option2: "Blue", Option3: "Green", Option4: "Yellow", CorrectAnswer: "Blue" },
+        { Question: "Fallback Q2: What is 2+2?", Option1: "3", Option2: "4", Option3: "5", Option4: "6", CorrectAnswer: "4" },
+        ...Array(8).fill({ Question: "Placeholder Question", Option1: "A", Option2: "B", Option3: "C", Option4: "D", CorrectAnswer: "A" })
+    ];
+    processData(fallbackQs);
+    btnAction.disabled = false;
+    btnAction.innerText = "Start Round";
+    updateDisplay();
+}
 
-    // 2. Create Rounds (10 Rounds of 10) + Lightning Round
+function processData(data) {
+    let cleanQs = [];
+    if (data.length > 0 && !data[0].hasOwnProperty("Question")) {
+        cleanQs = data.filter(r => r.question).map(r => ({
+            q: r.question,
+            img: r.imageurl || r.ImageURL,
+            opts: [r.option1, r.option2, r.option3, r.option4],
+            ans: r.correctanswer
+        }));
+    } else {
+        cleanQs = data.filter(r => r.Question).map(r => ({
+            q: r.Question,
+            img: r.ImageURL,
+            opts: [r.Option1, r.Option2, r.Option3, r.Option4],
+            ans: r.CorrectAnswer
+        }));
+    }
+
+    if (cleanQs.length === 0) {
+        alert("❌ No questions found! Check your Google Sheet Headers.");
+        return;
+    }
+
     rounds = [];
     let qCount = 0;
-    
-    // Create 10 standard rounds
     for (let i = 0; i < 10; i++) {
         if (qCount + 10 <= cleanQs.length) {
             rounds.push(cleanQs.slice(qCount, qCount + 10));
             qCount += 10;
+        } else if (qCount < cleanQs.length) {
+            rounds.push(cleanQs.slice(qCount));
+            qCount = cleanQs.length;
         }
     }
-    
-    // Put remaining questions in Lightning Round
     if (qCount < cleanQs.length) {
         rounds.push(cleanQs.slice(qCount));
     }
@@ -81,20 +120,27 @@ function processData(data) {
 
 // 2. CORE DISPLAY LOGIC
 function updateDisplay() {
+    if (!rounds || rounds.length === 0) return;
+
     // Reset Animations
     quizCard.classList.remove("animate__fadeIn");
-    void quizCard.offsetWidth; // Trigger reflow
+    void quizCard.offsetWidth; 
     quizCard.classList.add("animate__fadeIn");
 
-    stopTimer();
+    // NOTE: Removed stopTimer() from here so it doesn't kill the timer on start!
     
-    // Round Info
     let isLightning = currentRoundIdx >= 10;
     let roundName = isLightning ? "⚡ Lightning Round ⚡" : `Round ${currentRoundIdx + 1}`;
     roundIndicator.innerText = roundName;
+    
+    if (!rounds[currentRoundIdx]) {
+        mainText.innerText = "End of Quiz!";
+        btnAction.disabled = true;
+        return;
+    }
+
     qCounter.innerText = viewState === "ROUND_INTRO" ? "-" : `Q ${currentQIdx + 1}/${rounds[currentRoundIdx].length}`;
 
-    // View State Logic
     if (viewState === "ROUND_INTRO") {
         mainText.innerText = roundName;
         mainText.style.fontSize = "60px";
@@ -106,7 +152,6 @@ function updateDisplay() {
         
     } else {
         const qData = rounds[currentRoundIdx][currentQIdx];
-        
         mainText.style.fontSize = "32px";
         
         if (viewState === "QUESTION_HIDDEN") {
@@ -118,34 +163,30 @@ function updateDisplay() {
             
         } else if (viewState === "QUESTION_VISIBLE") {
             mainText.innerText = qData.q;
-            
-            // Image
             if(qData.img) {
                 qImage.src = qData.img;
                 qImage.style.display = "block";
             } else {
                 qImage.style.display = "none";
             }
-            
-            // Options
             optionsContainer.style.display = "grid";
             qData.opts.forEach((txt, i) => {
-                optBoxes[i].innerText = txt;
-                optBoxes[i].classList.remove("correct-highlight");
+                if(optBoxes[i]) {
+                    optBoxes[i].innerText = txt || "-"; 
+                    optBoxes[i].classList.remove("correct-highlight");
+                }
             });
-            
             answerReveal.style.display = "none";
             btnAction.innerText = "Start Timer";
             
         } else if (viewState === "TIMER_RUNNING") {
-             // UI stays same as visible, but timer counts
              btnAction.innerText = "Reveal Answer";
              
         } else if (viewState === "ANSWER_REVEALED") {
-            // Highlight Correct
             const correctIndex = qData.opts.findIndex(opt => opt === qData.ans);
-            if(correctIndex > -1) optBoxes[correctIndex].classList.add("correct-highlight");
-            
+            if(correctIndex > -1 && optBoxes[correctIndex]) {
+                optBoxes[correctIndex].classList.add("correct-highlight");
+            }
             answerReveal.style.display = "block";
             correctAnswerText.innerText = qData.ans;
             btnAction.innerText = "Next Question";
@@ -153,8 +194,10 @@ function updateDisplay() {
     }
 }
 
-// 3. ACTION BUTTON LOGIC (The Main Controller)
+// 3. ACTION BUTTON LOGIC
 btnAction.addEventListener("click", () => {
+    if (!rounds || rounds.length === 0) return;
+
     switch(viewState) {
         case "ROUND_INTRO":
             viewState = "QUESTION_HIDDEN";
@@ -164,11 +207,11 @@ btnAction.addEventListener("click", () => {
             break;
         case "QUESTION_VISIBLE":
             viewState = "TIMER_RUNNING";
-            startTimer();
+            startTimer(); // Starts timer
             break;
         case "TIMER_RUNNING":
             viewState = "ANSWER_REVEALED";
-            stopTimer();
+            stopTimer(); // Stops timer manually
             break;
         case "ANSWER_REVEALED":
             nextQuestion();
@@ -179,38 +222,39 @@ btnAction.addEventListener("click", () => {
 
 // 4. NAVIGATION LOGIC
 function nextQuestion() {
+    stopTimer(); // Ensure timer stops if skipping
     const currentRoundQs = rounds[currentRoundIdx];
     
     if (currentQIdx < currentRoundQs.length - 1) {
         currentQIdx++;
         viewState = "QUESTION_HIDDEN";
     } else {
-        // End of round
         if (currentRoundIdx < rounds.length - 1) {
             currentRoundIdx++;
             currentQIdx = 0;
             viewState = "ROUND_INTRO";
         } else {
             alert("End of Quiz!");
+            btnAction.disabled = true;
         }
     }
     updateDisplay();
 }
 
 btnPrev.addEventListener("click", () => {
+    stopTimer(); // Ensure timer stops if going back
     if (viewState !== "ROUND_INTRO" && currentQIdx > 0) {
         currentQIdx--;
-        viewState = "QUESTION_HIDDEN"; // Reset to hidden state of prev question
+        viewState = "QUESTION_HIDDEN"; 
     } else if (currentRoundIdx > 0) {
         currentRoundIdx--;
-        currentQIdx = rounds[currentRoundIdx].length - 1; // Go to last q of prev round
+        currentQIdx = rounds[currentRoundIdx].length - 1; 
         viewState = "ROUND_INTRO";
     }
     updateDisplay();
 });
 
 btnNext.addEventListener("click", () => {
-    // Force skip forward
     nextQuestion();
 });
 
@@ -218,27 +262,27 @@ btnNext.addEventListener("click", () => {
 function startTimer() {
     let timeLeft = parseInt(timerInput.value) || 10;
     timerDisplay.innerText = timeLeft;
-    try { tickSound.play(); } catch(e){}
+    
+    // Play sound safely
+    try { tickSound.play().catch(e => console.log("Sound blocked or missing")); } catch(e){}
     
     timerInterval = setInterval(() => {
         timeLeft--;
         timerDisplay.innerText = timeLeft;
         if (timeLeft <= 0) {
             clearInterval(timerInterval);
-            try { alarmSound.play(); } catch(e){}
+            try { alarmSound.play().catch(e => {}); } catch(e){}
         }
     }, 1000);
 }
 
 function stopTimer() {
     clearInterval(timerInterval);
-    tickSound.pause();
-    tickSound.currentTime = 0;
-    // Reset display
-    timerDisplay.innerText = timerInput.value;
+    if(tickSound) { tickSound.pause(); tickSound.currentTime = 0; }
+    // We do NOT reset the display text here, so you can see what time you stopped at
 }
 
-// 6. LEADERBOARD LOGIC (Editable)
+// 6. LEADERBOARD LOGIC
 function loadLeaderboard() {
     const saved = JSON.parse(localStorage.getItem("hostLeaderboard"));
     if (saved && saved.length > 0) {
@@ -260,15 +304,13 @@ function renderLeaderboard(teams) {
         lbBody.appendChild(tr);
     });
     
-    // Add Listeners to save on edit
     document.querySelectorAll(".editable").forEach(cell => {
         cell.addEventListener("input", saveLeaderboard);
-        // Sort on Enter key in score
         cell.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
                 e.preventDefault();
                 cell.blur();
-                saveLeaderboard(); // Trigger sort
+                saveLeaderboard(); 
             }
         });
     });
@@ -281,14 +323,8 @@ function saveLeaderboard() {
         score: parseInt(row.querySelector(".score-cell").innerText) || 0
     }));
     
-    // Sort by Score Descending
     data.sort((a, b) => b.score - a.score);
-    
     localStorage.setItem("hostLeaderboard", JSON.stringify(data));
-    
-    // Only re-render if order changed (avoid losing focus while typing)
-    // For simplicity, we only re-render on page load or explicit sort button, 
-    // but here we allow loose typing.
 }
 
 addTeamBtn.addEventListener("click", () => {
@@ -300,7 +336,6 @@ addTeamBtn.addEventListener("click", () => {
     `;
     lbBody.appendChild(tr);
     saveLeaderboard();
-    // Re-render to add listeners
     loadLeaderboard(); 
 });
 
