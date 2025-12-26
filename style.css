@@ -1,86 +1,110 @@
-/* Basic reset */
+/* 1. Global Settings & Font */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Arial', sans-serif;
+    font-family: 'Verdana', 'Segoe UI', sans-serif; /* Rounder, friendlier font */
 }
 
+/* 2. Background - Soft Pastel Mint */
 body {
-    background: #001e4d; /* Dark blue background */
+    background: #e8f5e9; /* Pastel Mint Green */
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
 }
 
+/* 3. The Quiz Card - Rounded and Clean */
 .app {
     background: #fff;
     width: 90%;
     max-width: 600px;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    padding: 40px;
+    border-radius: 25px; /* Very rounded corners for a "soft" look */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05); /* Soft shadow, not harsh */
 }
 
+/* 4. The Title - Big and Centered */
 .app h1 {
-    font-size: 25px;
-    color: #001e4d;
-    font-weight: 600;
-    border-bottom: 1px solid #333;
+    font-size: 36px; /* Much larger */
+    color: #5d6d7e; /* Warm Slate Grey (softer than black) */
+    font-weight: 700;
+    text-align: center; /* Centered */
+    border-bottom: 3px solid #b2dfdb; /* Pastel teal underline */
     padding-bottom: 20px;
+    margin-bottom: 30px;
+    letter-spacing: 1px;
 }
 
+/* 5. The Question Text */
 .quiz-container {
-    padding: 20px 0;
+    padding: 10px 0;
 }
 
 #question {
-    font-size: 18px;
-    color: #333;
+    font-size: 22px;
+    color: #4a4a4a;
     font-weight: 500;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
+    line-height: 1.4;
 }
 
+/* 6. The Buttons - Pastel Theme */
 .btn {
     background: #fff;
-    color: #222;
+    color: #555;
     font-weight: 500;
+    font-size: 18px; /* Larger text for easier reading */
     width: 100%;
-    border: 1px solid #222;
-    padding: 10px;
-    margin: 10px 0;
+    border: 2px solid #e0e0e0; /* Light grey border initially */
+    padding: 15px;
+    margin: 12px 0;
     text-align: left;
-    border-radius: 4px;
+    border-radius: 15px; /* Rounded pill shape */
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.2s;
 }
 
+/* Hover Effect - Pastel Blue */
 .btn:hover:not([disabled]) {
-    background: #222;
-    color: #fff;
+    background: #e3f2fd; /* Light Pastel Blue */
+    border-color: #bbdefb;
+    color: #000;
+    transform: translateY(-2px); /* Slight lift effect */
 }
 
-/* Styles for correct/incorrect visual feedback */
+/* 7. Feedback Colors (Correct/Incorrect) */
 .correct {
-    background: #9aeabc;
-    border-color: #9aeabc;
+    background: #c8e6c9 !important; /* Pastel Green */
+    border-color: #a5d6a7 !important;
+    color: #1b5e20 !important;
 }
 
 .incorrect {
-    background: #ff9393;
-    border-color: #ff9393;
+    background: #ffcdd2 !important; /* Pastel Red/Pink */
+    border-color: #ef9a9a !important;
+    color: #b71c1c !important;
 }
 
+/* 8. The Next/Play Again Button */
 #next-btn {
-    background: #001e4d;
+    background: #5d6d7e; /* Matches the title color */
     color: #fff;
-    font-weight: 500;
-    width: 150px;
+    font-weight: 600;
+    font-size: 18px;
+    width: 200px;
     border: 0;
-    padding: 10px;
-    margin: 20px auto 0;
-    border-radius: 4px;
+    padding: 15px;
+    margin: 30px auto 0; /* Centered */
+    border-radius: 50px; /* Fully rounded pill */
     cursor: pointer;
-    display: block; /* Helps center it */
+    display: block;
+    box-shadow: 0 5px 15px rgba(93, 109, 126, 0.3);
+    transition: transform 0.2s;
+}
+
+#next-btn:hover {
+    transform: scale(1.05); /* Grows slightly when hovered */
+    background: #34495e;
 }
