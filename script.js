@@ -33,12 +33,13 @@ const questions = [
 const questionElement = document.getElementById("question");
 const answerButtons = document.getElementById("answer-buttons");
 const nextButton = document.getElementById("next-btn");
-const timerElement = document.getElementById("timer"); // NEW
+const timerElement = document.getElementById("timer");
+const startTimerBtn = document.getElementById("start-timer-btn"); // NEW
 
 let currentQuestionIndex = 0;
 let score = 0;
-let timeLeft = 10; // NEW: Initial time
-let timerInterval; // NEW: Variable to hold the timer
+let timeLeft = 10;
+let timerInterval;
 
 // 3. Functions
 function startQuiz() {
@@ -49,13 +50,14 @@ function startQuiz() {
 }
 
 function showQuestion() {
-    resetState();
-    startTimer(); // NEW: Start the timer when question loads
+    resetState(); // Clears old timer and hides next button
     
+    // Load question text immediately
     let currentQuestion = questions[currentQuestionIndex];
     let questionNo = currentQuestionIndex + 1;
     questionElement.innerHTML = questionNo + ". " + currentQuestion.question;
 
+    // Create answer buttons but keep them hidden initially
     currentQuestion.answers.forEach(answer => {
         const button = document.createElement("button");
         button.innerHTML = answer.text;
@@ -71,50 +73,57 @@ function showQuestion() {
 
 function resetState() {
     nextButton.style.display = "none";
-    clearInterval(timerInterval); // NEW: Stop any existing timer
-    timeLeft = 10; // NEW: Reset time
-    timerElement.innerHTML = `Time Left: ${timeLeft}s`; // NEW: Update text
+    startTimerBtn.style.display = "block"; // Show the start button
+    answerButtons.style.display = "none";  // Hide the answers
+    
+    clearInterval(timerInterval);
+    timeLeft = 10;
+    timerElement.innerHTML = `Time Left: ${timeLeft}s`;
+    timerElement.style.color = "#5d6d7e"; // Reset color
+    timerElement.style.borderColor = "#90caf9"; // Reset border
     
     while(answerButtons.firstChild) {
         answerButtons.removeChild(answerButtons.firstChild);
     }
 }
 
-// NEW: Timer Logic
+// NEW Function: Triggered when user clicks "Start Timer"
+startTimerBtn.addEventListener("click", () => {
+    startTimerBtn.style.display = "none"; // Hide start button
+    answerButtons.style.display = "block"; // Reveal answers
+    startTimer(); // GO!
+});
+
 function startTimer() {
     timerInterval = setInterval(() => {
         timeLeft--;
         timerElement.innerHTML = `Time Left: ${timeLeft}s`;
         
-        // Change color to red if time is running out
+        // Visual warning
         if (timeLeft < 4) {
-             timerElement.style.color = "#c0392b"; // Red
+             timerElement.style.color = "#c0392b";
              timerElement.style.borderColor = "#c0392b";
-        } else {
-             timerElement.style.color = "#5d6d7e"; // Reset color
-             timerElement.style.borderColor = "#bbdefb";
         }
 
         if (timeLeft <= 0) {
             clearInterval(timerInterval);
             handleTimeUp();
         }
-    }, 1000); // Run every 1000ms (1 second)
+    }, 1000);
 }
 
 function handleTimeUp() {
-    // Reveal correct answer and disable buttons
+    // Just disable buttons, DO NOT reveal correct answer
     Array.from(answerButtons.children).forEach(button => {
-        if(button.dataset.correct === "true") {
-            button.classList.add("correct");
-        }
         button.disabled = true;
     });
+    
+    // Show Next button immediately so they can move on
     nextButton.style.display = "block";
 }
 
 function selectAnswer(e) {
-    clearInterval(timerInterval); // NEW: Stop timer when user clicks
+    clearInterval(timerInterval); // Stop timer
     
     const selectedBtn = e.target;
     const isCorrect = selectedBtn.dataset.correct === "true";
@@ -126,6 +135,7 @@ function selectAnswer(e) {
         selectedBtn.classList.add("incorrect");
     }
 
+    // Reveal correct answer only if they clicked (Cheating prevention)
     Array.from(answerButtons.children).forEach(button => {
         if(button.dataset.correct === "true") {
             button.classList.add("correct");
@@ -138,8 +148,9 @@ function selectAnswer(e) {
 
 function showScore() {
     resetState();
+    startTimerBtn.style.display = "none"; // Hide start button on score screen
     questionElement.innerHTML = `You scored ${score} out of ${questions.length}!`;
-    timerElement.style.display = "none"; // Hide timer on score screen
+    timerElement.style.display = "none";
     nextButton.innerHTML = "Play Again";
     nextButton.style.display = "block";
 }
@@ -147,7 +158,7 @@ function showScore() {
 function handleNextButton() {
     currentQuestionIndex++;
     if(currentQuestionIndex < questions.length) {
-        timerElement.style.display = "inline-block"; // Show timer again
+        timerElement.style.display = "inline-block";
         showQuestion();
     } else {
         showScore();
