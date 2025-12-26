@@ -1,4 +1,4 @@
-// 1. The Question Data
+// 1. Question Data
 const questions = [
     {
         question: "What does HTML stand for?",
@@ -34,7 +34,7 @@ const questionElement = document.getElementById("question");
 const answerButtons = document.getElementById("answer-buttons");
 const nextButton = document.getElementById("next-btn");
 const timerElement = document.getElementById("timer");
-const startTimerBtn = document.getElementById("start-timer-btn"); // NEW
+const startTimerBtn = document.getElementById("start-timer-btn");
 
 let currentQuestionIndex = 0;
 let score = 0;
@@ -42,6 +42,7 @@ let timeLeft = 10;
 let timerInterval;
 
 // 3. Functions
+
 function startQuiz() {
     currentQuestionIndex = 0;
     score = 0;
@@ -50,14 +51,14 @@ function startQuiz() {
 }
 
 function showQuestion() {
-    resetState(); // Clears old timer and hides next button
+    resetState();
     
-    // Load question text immediately
+    // Load text
     let currentQuestion = questions[currentQuestionIndex];
     let questionNo = currentQuestionIndex + 1;
     questionElement.innerHTML = questionNo + ". " + currentQuestion.question;
 
-    // Create answer buttons but keep them hidden initially
+    // Create buttons (but keep hidden via CSS parent)
     currentQuestion.answers.forEach(answer => {
         const button = document.createElement("button");
         button.innerHTML = answer.text;
@@ -73,25 +74,26 @@ function showQuestion() {
 
 function resetState() {
     nextButton.style.display = "none";
-    startTimerBtn.style.display = "block"; // Show the start button
-    answerButtons.style.display = "none";  // Hide the answers
+    startTimerBtn.style.display = "block"; // Show start button
+    answerButtons.style.display = "none";  // Hide answers
     
+    // Reset Timer Visuals
     clearInterval(timerInterval);
     timeLeft = 10;
     timerElement.innerHTML = `Time Left: ${timeLeft}s`;
-    timerElement.style.color = "#5d6d7e"; // Reset color
-    timerElement.style.borderColor = "#90caf9"; // Reset border
+    timerElement.style.color = "#5d6d7e";
+    timerElement.style.borderColor = "#90caf9";
     
     while(answerButtons.firstChild) {
         answerButtons.removeChild(answerButtons.firstChild);
     }
 }
 
-// NEW Function: Triggered when user clicks "Start Timer"
+// Event Listener for the Orange "Start" Button
 startTimerBtn.addEventListener("click", () => {
-    startTimerBtn.style.display = "none"; // Hide start button
-    answerButtons.style.display = "block"; // Reveal answers
-    startTimer(); // GO!
+    startTimerBtn.style.display = "none"; // Hide button
+    answerButtons.style.display = "block"; // Show answers
+    startTimer(); // NOW we start the timer
 });
 
 function startTimer() {
@@ -99,7 +101,6 @@ function startTimer() {
         timeLeft--;
         timerElement.innerHTML = `Time Left: ${timeLeft}s`;
         
-        // Visual warning
         if (timeLeft < 4) {
              timerElement.style.color = "#c0392b";
              timerElement.style.borderColor = "#c0392b";
@@ -113,17 +114,16 @@ function startTimer() {
 }
 
 function handleTimeUp() {
-    // Just disable buttons, DO NOT reveal correct answer
+    // Disable all buttons
     Array.from(answerButtons.children).forEach(button => {
         button.disabled = true;
     });
-    
-    // Show Next button immediately so they can move on
+    // Show Next button
     nextButton.style.display = "block";
 }
 
 function selectAnswer(e) {
-    clearInterval(timerInterval); // Stop timer
+    clearInterval(timerInterval);
     
     const selectedBtn = e.target;
     const isCorrect = selectedBtn.dataset.correct === "true";
@@ -135,11 +135,8 @@ function selectAnswer(e) {
         selectedBtn.classList.add("incorrect");
     }
 
-    // Reveal correct answer only if they clicked (Cheating prevention)
+    // Disable all buttons
     Array.from(answerButtons.children).forEach(button => {
-        if(button.dataset.correct === "true") {
-            button.classList.add("correct");
-        }
         button.disabled = true;
     });
 
@@ -147,10 +144,13 @@ function selectAnswer(e) {
 }
 
 function showScore() {
+    // Clear everything
     resetState();
-    startTimerBtn.style.display = "none"; // Hide start button on score screen
-    questionElement.innerHTML = `You scored ${score} out of ${questions.length}!`;
+    startTimerBtn.style.display = "none";
     timerElement.style.display = "none";
+    
+    questionElement.innerHTML = `You scored ${score} out of ${questions.length}!`;
+    
     nextButton.innerHTML = "Play Again";
     nextButton.style.display = "block";
 }
@@ -173,4 +173,5 @@ nextButton.addEventListener("click", () => {
     }
 });
 
+// Initialize
 startQuiz();
