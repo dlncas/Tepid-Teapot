@@ -11,18 +11,39 @@
     <div class="app">
         <h1>Tepid Teapot 2025</h1>
         
+        <div id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+
         <div class="quiz-container">
             <div id="timer">Time Left: 10s</div>
 
-            <h2 id="question">Question 1</h2>
+            <h2 id="question-number" class="big-number">Question 1</h2>
+
+            <h2 id="question-text" style="display: none;"></h2>
+
+            <img id="question-image" src="" alt="Question Image" style="display: none;">
             
             <button id="start-timer-btn" class="btn start-btn">Reveal Question</button>
             
-            <div id="answer-buttons"></div>
+            <div id="answer-buttons" style="display: none;"></div>
             
             <button id="next-btn" style="display: none;">Next</button>
+
+            <div id="leaderboard-section" style="display: none;">
+                <h2>🏆 Hall of Fame 🏆</h2>
+                <ul id="high-scores-list"></ul>
+                <div class="input-group">
+                    <input type="text" id="username" placeholder="Enter your name">
+                    <button id="save-score-btn" class="btn" disabled>Save Score</button>
+                </div>
+                <button id="restart-btn" class="btn">Play Again</button>
+            </div>
         </div>
     </div>
+
+    <audio id="tick-sound" src="sounds/ticking.mp3"></audio>
+    <audio id="alarm-sound" src="sounds/alarm.mp3"></audio>
 
     <script src="script.js"></script>
 </body>
