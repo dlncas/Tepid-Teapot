@@ -122,13 +122,11 @@ function processData(data) {
 function updateDisplay() {
     if (!rounds || rounds.length === 0) return;
 
-    // Reset Animations
+    // Trigger Animation Flash (Visual Feedback)
     quizCard.classList.remove("animate__fadeIn");
     void quizCard.offsetWidth; 
     quizCard.classList.add("animate__fadeIn");
 
-    // NOTE: Removed stopTimer() from here so it doesn't kill the timer on start!
-    
     let isLightning = currentRoundIdx >= 10;
     let roundName = isLightning ? "⚡ Lightning Round ⚡" : `Round ${currentRoundIdx + 1}`;
     roundIndicator.innerText = roundName;
@@ -150,6 +148,9 @@ function updateDisplay() {
         btnAction.innerText = "Start Round";
         btnPrev.disabled = currentRoundIdx === 0;
         
+        // Reset timer display text
+        timerDisplay.innerText = timerInput.value;
+        
     } else {
         const qData = rounds[currentRoundIdx][currentQIdx];
         mainText.style.fontSize = "32px";
@@ -160,8 +161,10 @@ function updateDisplay() {
             optionsContainer.style.display = "none";
             answerReveal.style.display = "none";
             btnAction.innerText = "Reveal Question";
+            timerDisplay.innerText = timerInput.value;
             
-        } else if (viewState === "QUESTION_VISIBLE") {
+        } else if (viewState === "QUESTION_VISIBLE" || viewState === "TIMER_RUNNING") {
+            // NOTE: We share logic here so the layout doesn't break during timer
             mainText.innerText = qData.q;
             if(qData.img) {
                 qImage.src = qData.img;
@@ -177,11 +180,15 @@ function updateDisplay() {
                 }
             });
             answerReveal.style.display = "none";
-            btnAction.innerText = "Start Timer";
             
-        } else if (viewState === "TIMER_RUNNING") {
-             btnAction.innerText = "Reveal Answer";
-             
+            // Set button text based on state
+            if(viewState === "TIMER_RUNNING") {
+                btnAction.innerText = "Reveal Answer";
+            } else {
+                btnAction.innerText = "Start Timer";
+                timerDisplay.innerText = timerInput.value;
+            }
+            
         } else if (viewState === "ANSWER_REVEALED") {
             const correctIndex = qData.opts.findIndex(opt => opt === qData.ans);
             if(correctIndex > -1 && optBoxes[correctIndex]) {
@@ -201,28 +208,67 @@ btnAction.addEventListener("click", () => {
     switch(viewState) {
         case "ROUND_INTRO":
             viewState = "QUESTION_HIDDEN";
+            updateDisplay();
             break;
+            
         case "QUESTION_HIDDEN":
             viewState = "QUESTION_VISIBLE";
+            updateDisplay();
             break;
+            
         case "QUESTION_VISIBLE":
             viewState = "TIMER_RUNNING";
-            startTimer(); // Starts timer
+            // IMPORTANT: We do NOT call updateDisplay() here to avoid resetting animations.
+            // We just update the button text and start the timer manually.
+            btnAction.innerText = "Reveal Answer";
+            startTimer(); 
             break;
+            
         case "TIMER_RUNNING":
             viewState = "ANSWER_REVEALED";
-            stopTimer(); // Stops timer manually
+            stopTimer();
+            updateDisplay();
             break;
+            
         case "ANSWER_REVEALED":
             nextQuestion();
             break;
     }
-    updateDisplay();
 });
 
-// 4. NAVIGATION LOGIC
+// 4. TIMER LOGIC
+function startTimer() {
+    // 1. Clear any existing timer just in case
+    clearInterval(timerInterval);
+    
+    // 2. Get value
+    let timeLeft = parseInt(timerInput.value) || 10;
+    timerDisplay.innerText = timeLeft;
+    
+    // 3. Play sound (Safely)
+    try { tickSound.play().catch(e => {}); } catch(e){}
+    
+    // 4. Start Interval
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        timerDisplay.innerText = timeLeft;
+        
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            try { alarmSound.play().catch(e => {}); } catch(e){}
+        }
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(timerInterval);
+    if(tickSound) { tickSound.pause(); tickSound.currentTime = 0; }
+    // We purposely do NOT reset the timer text here, so you can see where it stopped.
+}
+
+// 5. NAVIGATION LOGIC
 function nextQuestion() {
-    stopTimer(); // Ensure timer stops if skipping
+    stopTimer(); 
     const currentRoundQs = rounds[currentRoundIdx];
     
     if (currentQIdx < currentRoundQs.length - 1) {
@@ -242,7 +288,7 @@ function nextQuestion() {
 }
 
 btnPrev.addEventListener("click", () => {
-    stopTimer(); // Ensure timer stops if going back
+    stopTimer();
     if (viewState !== "ROUND_INTRO" && currentQIdx > 0) {
         currentQIdx--;
         viewState = "QUESTION_HIDDEN"; 
@@ -257,30 +303,6 @@ btnPrev.addEventListener("click", () => {
 btnNext.addEventListener("click", () => {
     nextQuestion();
 });
-
-// 5. TIMER LOGIC
-function startTimer() {
-    let timeLeft = parseInt(timerInput.value) || 10;
-    timerDisplay.innerText = timeLeft;
-    
-    // Play sound safely
-    try { tickSound.play().catch(e => console.log("Sound blocked or missing")); } catch(e){}
-    
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        timerDisplay.innerText = timeLeft;
-        if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            try { alarmSound.play().catch(e => {}); } catch(e){}
-        }
-    }, 1000);
-}
-
-function stopTimer() {
-    clearInterval(timerInterval);
-    if(tickSound) { tickSound.pause(); tickSound.currentTime = 0; }
-    // We do NOT reset the display text here, so you can see what time you stopped at
-}
 
 // 6. LEADERBOARD LOGIC
 function loadLeaderboard() {
