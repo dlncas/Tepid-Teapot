@@ -3,50 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tepid Teapot 2025</title>
+    <title>Tepid Teapot 2025 - Host Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 </head>
 <body>
 
-    <div class="app">
-        <h1>Tepid Teapot 2025</h1>
+    <div class="dashboard-container">
         
-        <div id="progress-container">
-            <div id="progress-bar"></div>
-        </div>
+        <main class="quiz-stage">
+            <header class="quiz-header">
+                <h1 class="teapot-title">🫖 Tepid Teapot 2025 🫖</h1>
+                <div class="round-indicator" id="round-indicator">Round 1: General Knowledge</div>
+            </header>
 
-        <div class="quiz-container">
-            <div id="timer">Time Left: 10s</div>
-
-            <h2 id="question-number" class="big-number">Question 1</h2>
-
-            <h2 id="question-text" style="display: none;"></h2>
-
-            <img id="question-image" src="" alt="Question Image" style="display: none;">
-            
-            <button id="start-timer-btn" class="btn start-btn">Reveal Question</button>
-            
-            <div id="answer-buttons" style="display: none;"></div>
-            
-            <button id="next-btn" style="display: none;">Next</button>
-
-            <div id="leaderboard-section" style="display: none;">
-                <h2>🏆 Hall of Fame 🏆</h2>
-                <ul id="high-scores-list"></ul>
-                <div class="input-group">
-                    <input type="text" id="username" placeholder="Enter your name">
-                    <button id="save-score-btn" class="btn" disabled>Save Score</button>
+            <div class="card animate__animated" id="quiz-card">
+                <div class="status-bar">
+                    <div id="q-counter">Q 1/10</div>
+                    <div class="timer-wrapper">
+                        <div id="timer">10</div>
+                        <label>sec</label>
+                    </div>
                 </div>
-                <button id="restart-btn" class="btn">Play Again</button>
+
+                <div id="content-area">
+                    <h2 id="main-text" class="big-text">Round 1</h2>
+                    <img id="q-image" src="" style="display:none;" alt="Visual Clue">
+                    
+                    <div id="options-container" class="options-grid" style="display:none;">
+                        <div class="option-box" id="opt-1">Option A</div>
+                        <div class="option-box" id="opt-2">Option B</div>
+                        <div class="option-box" id="opt-3">Option C</div>
+                        <div class="option-box" id="opt-4">Option D</div>
+                    </div>
+                    
+                    <div id="answer-reveal" style="display:none;">
+                        Correct Answer: <span id="correct-answer-text">Paris</span>
+                    </div>
+                </div>
+
+                <div class="controls-area">
+                    <div class="nav-controls">
+                        <button id="btn-prev" class="ctrl-btn secondary">◀ Back</button>
+                        <button id="btn-action" class="ctrl-btn primary">Reveal Question</button>
+                        <button id="btn-next" class="ctrl-btn secondary">Next ▶</button>
+                    </div>
+                    
+                    <div class="settings-controls">
+                        <label>Timer:</label>
+                        <input type="number" id="timer-setting" value="10" min="5" max="60">
+                    </div>
+                </div>
             </div>
-        </div>
+        </main>
+
+        <aside class="leaderboard-panel">
+            <h2>🏆 Leaderboard</h2>
+            <p class="sub-text">Click names/scores to edit</p>
+            
+            <table class="lb-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Team Name</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody id="lb-body">
+                    </tbody>
+            </table>
+            
+            <div class="lb-controls">
+                <button id="add-team-btn" class="sm-btn">+ Add Team</button>
+                <button id="reset-lb-btn" class="sm-btn danger">Reset Scores</button>
+            </div>
+        </aside>
+
     </div>
 
     <audio id="tick-sound" src="sounds/ticking.mp3"></audio>
     <audio id="alarm-sound" src="sounds/alarm.mp3"></audio>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    
     <script src="script.js"></script>
 </body>
 </html>
