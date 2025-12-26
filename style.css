@@ -1,157 +1,221 @@
-/* Global Settings */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Verdana', 'Segoe UI', sans-serif;
-}
+/* RESET & FONTS */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
 
 body {
     background: #e8f5e9;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden; /* No scrolling on main body */
 }
 
-.app {
-    background: #fff;
-    width: 90%;
-    max-width: 600px;
-    padding: 40px;
-    border-radius: 25px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+/* LAYOUT: 2 Columns */
+.dashboard-container {
+    display: grid;
+    grid-template-columns: 1fr 350px; /* Quiz takes remaining space, Leaderboard is 350px */
+    height: 100vh;
+}
+
+/* === LEFT COLUMN: QUIZ STAGE === */
+.quiz-stage {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 4px solid #b2dfdb;
+}
+
+.quiz-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.teapot-title {
+    font-size: 48px; /* Massive Title */
+    color: #2e7d32;
+    text-shadow: 2px 2px 0px #a5d6a7;
+    margin-bottom: 10px;
+}
+
+.round-indicator {
+    background: #2e7d32;
+    color: white;
+    padding: 5px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+/* THE MAIN CARD */
+.card {
+    background: white;
+    width: 100%;
+    max-width: 900px;
+    height: 80%; /* Fill most of the screen */
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    padding: 30px;
+    position: relative;
+}
+
+/* Status Bar */
+.status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #777;
+}
+
+.timer-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#timer {
+    font-size: 40px;
+    color: #d32f2f;
+    font-weight: 900;
+    min-width: 60px;
+    text-align: right;
+}
+
+/* Content Area (Middle) */
+#content-area {
+    flex-grow: 1; /* Takes up all available space */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     text-align: center;
 }
 
-.app h1 {
-    font-size: 28px;
-    color: #5d6d7e;
-    font-weight: 700;
-    border-bottom: 3px solid #b2dfdb;
-    padding-bottom: 20px;
-    margin-bottom: 20px;
+.big-text {
+    font-size: 32px; /* Bigger question text */
+    color: #333;
+    line-height: 1.4;
 }
 
-/* Progress Bar */
-#progress-container {
-    width: 100%;
-    height: 10px;
-    background-color: #f1f1f1;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    overflow: hidden;
-}
-
-#progress-bar {
-    height: 100%;
-    width: 0%; /* JS will change this */
-    background-color: #66bb6a; /* Nice Green */
-    transition: width 0.3s;
-}
-
-/* Timer */
-#timer {
-    font-size: 24px;
-    font-weight: 800;
-    color: #5d6d7e;
-    background: #e3f2fd;
-    padding: 10px 25px;
-    border-radius: 50px;
-    display: inline-block;
-    margin-bottom: 20px;
-    border: 4px solid #90caf9;
-}
-
-/* Question Styling */
-.big-number {
-    font-size: 40px !important;
-    font-weight: 800;
-    color: #5d6d7e;
-    margin: 30px 0;
-}
-
-#question-text {
-    font-size: 22px;
-    color: #4a4a4a;
-    font-weight: 500;
-    margin-bottom: 15px;
-    text-align: left;
-}
-
-#question-image {
-    max-width: 100%;
+#q-image {
     max-height: 250px;
+    margin: 15px 0;
     border-radius: 10px;
-    margin-bottom: 20px;
-    border: 2px solid #eee;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-/* Buttons */
-.btn {
-    background: #fff;
-    color: #555;
-    font-weight: 500;
-    font-size: 18px;
+/* Options Grid */
+.options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
     width: 100%;
-    border: 2px solid #e0e0e0;
-    padding: 15px;
-    margin: 10px 0;
-    text-align: left;
-    border-radius: 15px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn:hover:not([disabled]) {
-    background: #e3f2fd;
-    border-color: #bbdefb;
-    color: #000;
-    transform: translateY(-2px);
-}
-
-.start-btn {
-    background: #ff7043 !important;
-    color: white !important;
-    text-align: center !important;
-    font-weight: bold !important;
-    border: none !important;
-}
-
-.start-btn:hover {
-    background: #f4511e !important;
-    transform: scale(1.02);
-}
-
-/* Colors */
-.correct { background: #c8e6c9 !important; border-color: #a5d6a7 !important; color: #1b5e20 !important; }
-.incorrect { background: #ffcdd2 !important; border-color: #ef9a9a !important; color: #b71c1c !important; }
-
-/* Leaderboard Input */
-.input-group {
     margin-top: 20px;
 }
-#username {
-    padding: 15px;
-    font-size: 16px;
+
+.option-box {
+    background: #f1f8e9;
+    padding: 20px;
     border-radius: 10px;
-    border: 2px solid #ddd;
-    width: 100%;
-    margin-bottom: 10px;
+    border: 2px solid #c5e1a5;
+    font-size: 20px;
+    color: #33691e;
 }
-#high-scores-list {
-    list-style: none;
-    padding: 0;
-    margin-bottom: 20px;
-    text-align: left;
+
+/* Correct Answer Highlight */
+.correct-highlight {
+    background: #2e7d32 !important;
+    color: white !important;
+    border-color: #1b5e20 !important;
+    transform: scale(1.05);
+    transition: all 0.3s;
 }
-#high-scores-list li {
-    background: #fff8e1; /* Gold tint */
-    padding: 10px;
-    margin: 5px 0;
-    border-radius: 5px;
-    border: 1px solid #ffe082;
+
+#answer-reveal {
+    margin-top: 20px;
+    font-size: 24px;
     font-weight: bold;
+    color: #d32f2f;
+    padding: 10px;
+    background: #ffebee;
+    border-radius: 10px;
+    width: 100%;
+}
+
+/* Controls (Bottom) */
+.controls-area {
+    margin-top: auto;
+    border-top: 2px solid #eee;
+    padding-top: 20px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
+
+.ctrl-btn {
+    padding: 15px 25px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.1s;
+}
+
+.ctrl-btn:active { transform: scale(0.95); }
+
+.primary { background: #ff7043; color: white; min-width: 200px; }
+.secondary { background: #cfd8dc; color: #455a64; }
+
+.settings-controls input {
+    padding: 10px;
+    width: 70px;
+    font-size: 18px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+}
+
+/* === RIGHT COLUMN: LEADERBOARD === */
+.leaderboard-panel {
+    background: #fff;
+    padding: 20px;
+    border-left: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+}
+
+.leaderboard-panel h2 { color: #f9a825; text-align: center; font-size: 28px; margin-bottom: 5px; }
+.sub-text { text-align: center; color: #999; font-size: 12px; margin-bottom: 20px; }
+
+.lb-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.lb-table th { text-align: left; padding: 10px; color: #666; border-bottom: 2px solid #eee; }
+.lb-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 18px; }
+
+/* Editable Fields */
+.editable {
+    padding: 5px;
+    background: #fff;
+    border: 1px dashed transparent;
+    cursor: text;
+}
+.editable:hover { background: #fffde7; border-color: #f9a825; }
+.editable:focus { background: #fff9c4; outline: none; border-bottom: 2px solid #f9a825; }
+
+.lb-controls {
+    margin-top: auto;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.sm-btn { padding: 8px 15px; border: 1px solid #ccc; background: #eee; cursor: pointer; border-radius: 4px; }
+.danger { color: red; border-color: #ffcdd2; background: #ffebee; }
