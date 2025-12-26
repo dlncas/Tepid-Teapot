@@ -1,265 +1,315 @@
-// 1. CONFIGURATION
-// PASTE YOUR GOOGLE SHEET CSV LINK HERE!
-const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkB-VFvdDRm-bWJDxliTPUE3QnOMuCIM9BR7i4ypvX-sp5fwnW3TPFA4KLNBK44qDVfkdvkEdqzQI9/pub?output=csv";
+// CONFIGURATION
+const GOOGLE_SHEET_URL = "YOUR_GOOGLE_SHEETS_CSV_LINK_HERE"; // <--- PASTE LINK HERE
+const TEAMS_DEFAULT = ["The Teapots", "Earl Grey's Anatomy", "Brew Crew", "Chai Hards"];
 
-// 2. DOM Elements
-const questionNumberText = document.getElementById("question-number");
-const questionText = document.getElementById("question-text");
-const questionImage = document.getElementById("question-image");
-const answerButtons = document.getElementById("answer-buttons");
-const nextButton = document.getElementById("next-btn");
-const timerElement = document.getElementById("timer");
-const startTimerBtn = document.getElementById("start-timer-btn");
-const progressBar = document.getElementById("progress-bar");
+// DOM Elements
+const roundIndicator = document.getElementById("round-indicator");
+const qCounter = document.getElementById("q-counter");
+const timerDisplay = document.getElementById("timer");
+const mainText = document.getElementById("main-text");
+const qImage = document.getElementById("q-image");
+const optionsContainer = document.getElementById("options-container");
+const optBoxes = [document.getElementById("opt-1"), document.getElementById("opt-2"), document.getElementById("opt-3"), document.getElementById("opt-4")];
+const answerReveal = document.getElementById("answer-reveal");
+const correctAnswerText = document.getElementById("correct-answer-text");
+const quizCard = document.getElementById("quiz-card");
+
+// Buttons & Inputs
+const btnPrev = document.getElementById("btn-prev");
+const btnNext = document.getElementById("btn-next");
+const btnAction = document.getElementById("btn-action");
+const timerInput = document.getElementById("timer-setting");
+const addTeamBtn = document.getElementById("add-team-btn");
+const resetLbBtn = document.getElementById("reset-lb-btn");
+const lbBody = document.getElementById("lb-body");
+
+// Audio
 const tickSound = document.getElementById("tick-sound");
 const alarmSound = document.getElementById("alarm-sound");
 
-// Leaderboard Elements
-const leaderboardSection = document.getElementById("leaderboard-section");
-const highScoresList = document.getElementById("high-scores-list");
-const usernameInput = document.getElementById("username");
-const saveScoreBtn = document.getElementById("save-score-btn");
-const restartBtn = document.getElementById("restart-btn");
-
-let questions = []; // Will be filled from Google Sheets
-let currentQuestionIndex = 0;
-let score = 0;
-let timeLeft = 10;
+// State
+let allQuestions = [];
+let rounds = []; // Array of arrays [[10 qs], [10 qs]...]
+let currentRoundIdx = 0;
+let currentQIdx = 0; // 0 to 9 within a round
+let viewState = "ROUND_INTRO"; // States: ROUND_INTRO, QUESTION_HIDDEN, QUESTION_VISIBLE, ANSWER_REVEALED
 let timerInterval;
 
-// 3. FETCH DATA & INIT
-function initGame() {
-    startTimerBtn.innerHTML = "Loading Questions...";
-    startTimerBtn.disabled = true;
+// 1. INITIALIZATION
+function init() {
+    loadLeaderboard();
+    btnAction.innerText = "Loading...";
+    btnAction.disabled = true;
 
     Papa.parse(GOOGLE_SHEET_URL, {
         download: true,
         header: true,
         complete: function(results) {
-            // Process the CSV data into our format
-            questions = results.data
-                .filter(row => row.Question) // Remove empty rows
-                .map(row => ({
-                    question: row.Question,
-                    image: row.ImageURL || null,
-                    answers: [
-                        { text: row.Option1, correct: row.Option1 === row.CorrectAnswer },
-                        { text: row.Option2, correct: row.Option2 === row.CorrectAnswer },
-                        { text: row.Option3, correct: row.Option3 === row.CorrectAnswer },
-                        { text: row.Option4, correct: row.Option4 === row.CorrectAnswer }
-                    ]
-                }));
-
-            // Shuffle questions (Optional - removes predictability)
-            questions.sort(() => Math.random() - 0.5);
-
-            // Ready to start
-            startTimerBtn.innerHTML = "Start Quiz";
-            startTimerBtn.disabled = false;
-            
-            // Add click listener now that data is ready
-            startTimerBtn.addEventListener("click", startQuiz);
+            processData(results.data);
+            btnAction.disabled = false;
+            updateDisplay();
         }
     });
 }
 
-// 4. MAIN GAME LOGIC
-function startQuiz() {
-    // If coming from "Reveal Question" button, handle differently
-    if (questions.length === 0) return; 
+function processData(data) {
+    // 1. Clean Data
+    const cleanQs = data.filter(r => r.Question).map(r => ({
+        q: r.Question,
+        img: r.ImageURL,
+        opts: [r.Option1, r.Option2, r.Option3, r.Option4],
+        ans: r.CorrectAnswer
+    }));
 
-    // Reset game state
-    currentQuestionIndex = 0;
-    score = 0;
-    leaderboardSection.style.display = "none";
-    nextButton.innerHTML = "Next";
+    // 2. Create Rounds (10 Rounds of 10) + Lightning Round
+    rounds = [];
+    let qCount = 0;
     
-    // Change button purpose
-    startTimerBtn.removeEventListener("click", startQuiz);
-    startTimerBtn.addEventListener("click", revealQuestion);
+    // Create 10 standard rounds
+    for (let i = 0; i < 10; i++) {
+        if (qCount + 10 <= cleanQs.length) {
+            rounds.push(cleanQs.slice(qCount, qCount + 10));
+            qCount += 10;
+        }
+    }
     
-    showQuestionPlaceholder();
+    // Put remaining questions in Lightning Round
+    if (qCount < cleanQs.length) {
+        rounds.push(cleanQs.slice(qCount));
+    }
 }
 
-function showQuestionPlaceholder() {
-    resetState();
-    updateProgressBar();
-    
-    questionNumberText.style.display = "block";
-    questionNumberText.innerHTML = "Question " + (currentQuestionIndex + 1);
-    
-    startTimerBtn.innerHTML = "Reveal Question";
-    startTimerBtn.style.display = "block";
-}
+// 2. CORE DISPLAY LOGIC
+function updateDisplay() {
+    // Reset Animations
+    quizCard.classList.remove("animate__fadeIn");
+    void quizCard.offsetWidth; // Trigger reflow
+    quizCard.classList.add("animate__fadeIn");
 
-function revealQuestion() {
-    startTimerBtn.style.display = "none";
-    questionNumberText.style.display = "none";
+    stopTimer();
     
-    questionText.style.display = "block";
-    answerButtons.style.display = "block";
+    // Round Info
+    let isLightning = currentRoundIdx >= 10;
+    let roundName = isLightning ? "⚡ Lightning Round ⚡" : `Round ${currentRoundIdx + 1}`;
+    roundIndicator.innerText = roundName;
+    qCounter.innerText = viewState === "ROUND_INTRO" ? "-" : `Q ${currentQIdx + 1}/${rounds[currentRoundIdx].length}`;
 
-    let currentQuestion = questions[currentQuestionIndex];
-    questionText.innerHTML = (currentQuestionIndex + 1) + ". " + currentQuestion.question;
-
-    // Handle Image
-    if (currentQuestion.image && currentQuestion.image.trim() !== "") {
-        questionImage.src = currentQuestion.image;
-        questionImage.style.display = "block";
+    // View State Logic
+    if (viewState === "ROUND_INTRO") {
+        mainText.innerText = roundName;
+        mainText.style.fontSize = "60px";
+        qImage.style.display = "none";
+        optionsContainer.style.display = "none";
+        answerReveal.style.display = "none";
+        btnAction.innerText = "Start Round";
+        btnPrev.disabled = currentRoundIdx === 0;
+        
     } else {
-        questionImage.style.display = "none";
+        const qData = rounds[currentRoundIdx][currentQIdx];
+        
+        mainText.style.fontSize = "32px";
+        
+        if (viewState === "QUESTION_HIDDEN") {
+            mainText.innerText = `Question ${currentQIdx + 1}`;
+            qImage.style.display = "none";
+            optionsContainer.style.display = "none";
+            answerReveal.style.display = "none";
+            btnAction.innerText = "Reveal Question";
+            
+        } else if (viewState === "QUESTION_VISIBLE") {
+            mainText.innerText = qData.q;
+            
+            // Image
+            if(qData.img) {
+                qImage.src = qData.img;
+                qImage.style.display = "block";
+            } else {
+                qImage.style.display = "none";
+            }
+            
+            // Options
+            optionsContainer.style.display = "grid";
+            qData.opts.forEach((txt, i) => {
+                optBoxes[i].innerText = txt;
+                optBoxes[i].classList.remove("correct-highlight");
+            });
+            
+            answerReveal.style.display = "none";
+            btnAction.innerText = "Start Timer";
+            
+        } else if (viewState === "TIMER_RUNNING") {
+             // UI stays same as visible, but timer counts
+             btnAction.innerText = "Reveal Answer";
+             
+        } else if (viewState === "ANSWER_REVEALED") {
+            // Highlight Correct
+            const correctIndex = qData.opts.findIndex(opt => opt === qData.ans);
+            if(correctIndex > -1) optBoxes[correctIndex].classList.add("correct-highlight");
+            
+            answerReveal.style.display = "block";
+            correctAnswerText.innerText = qData.ans;
+            btnAction.innerText = "Next Question";
+        }
     }
-
-    // Create Buttons
-    currentQuestion.answers.forEach(answer => {
-        const button = document.createElement("button");
-        button.innerHTML = answer.text;
-        button.classList.add("btn");
-        answerButtons.appendChild(button);
-        if(answer.correct) button.dataset.correct = "true";
-        button.addEventListener("click", selectAnswer);
-    });
-
-    startTimer();
 }
 
-function resetState() {
-    nextButton.style.display = "none";
-    startTimerBtn.style.display = "block";
-    answerButtons.style.display = "none";
-    questionText.style.display = "none";
-    questionImage.style.display = "none";
-    
-    clearInterval(timerInterval);
-    stopSounds();
-    timeLeft = 10;
-    timerElement.innerHTML = `Time Left: ${timeLeft}s`;
-    timerElement.style.color = "#5d6d7e";
-    timerElement.style.borderColor = "#90caf9";
-    
-    while(answerButtons.firstChild) {
-        answerButtons.removeChild(answerButtons.firstChild);
+// 3. ACTION BUTTON LOGIC (The Main Controller)
+btnAction.addEventListener("click", () => {
+    switch(viewState) {
+        case "ROUND_INTRO":
+            viewState = "QUESTION_HIDDEN";
+            break;
+        case "QUESTION_HIDDEN":
+            viewState = "QUESTION_VISIBLE";
+            break;
+        case "QUESTION_VISIBLE":
+            viewState = "TIMER_RUNNING";
+            startTimer();
+            break;
+        case "TIMER_RUNNING":
+            viewState = "ANSWER_REVEALED";
+            stopTimer();
+            break;
+        case "ANSWER_REVEALED":
+            nextQuestion();
+            break;
     }
+    updateDisplay();
+});
+
+// 4. NAVIGATION LOGIC
+function nextQuestion() {
+    const currentRoundQs = rounds[currentRoundIdx];
+    
+    if (currentQIdx < currentRoundQs.length - 1) {
+        currentQIdx++;
+        viewState = "QUESTION_HIDDEN";
+    } else {
+        // End of round
+        if (currentRoundIdx < rounds.length - 1) {
+            currentRoundIdx++;
+            currentQIdx = 0;
+            viewState = "ROUND_INTRO";
+        } else {
+            alert("End of Quiz!");
+        }
+    }
+    updateDisplay();
 }
 
-// 5. Timer & Sounds
+btnPrev.addEventListener("click", () => {
+    if (viewState !== "ROUND_INTRO" && currentQIdx > 0) {
+        currentQIdx--;
+        viewState = "QUESTION_HIDDEN"; // Reset to hidden state of prev question
+    } else if (currentRoundIdx > 0) {
+        currentRoundIdx--;
+        currentQIdx = rounds[currentRoundIdx].length - 1; // Go to last q of prev round
+        viewState = "ROUND_INTRO";
+    }
+    updateDisplay();
+});
+
+btnNext.addEventListener("click", () => {
+    // Force skip forward
+    nextQuestion();
+});
+
+// 5. TIMER LOGIC
 function startTimer() {
-    try { tickSound.play().catch(e => {}); } catch(e){}
+    let timeLeft = parseInt(timerInput.value) || 10;
+    timerDisplay.innerText = timeLeft;
+    try { tickSound.play(); } catch(e){}
     
     timerInterval = setInterval(() => {
         timeLeft--;
-        timerElement.innerHTML = `Time Left: ${timeLeft}s`;
-        
-        if (timeLeft < 4) {
-             timerElement.style.color = "#c0392b";
-             timerElement.style.borderColor = "#c0392b";
-        }
-
+        timerDisplay.innerText = timeLeft;
         if (timeLeft <= 0) {
             clearInterval(timerInterval);
-            handleTimeUp();
+            try { alarmSound.play(); } catch(e){}
         }
     }, 1000);
 }
 
-function stopSounds() {
-    if(tickSound) { tickSound.pause(); tickSound.currentTime = 0; }
-    if(alarmSound) { alarmSound.pause(); alarmSound.currentTime = 0; }
-}
-
-function handleTimeUp() {
-    stopSounds();
-    try { alarmSound.play(); } catch(e){}
-
-    Array.from(answerButtons.children).forEach(button => {
-        button.disabled = true;
-    });
-    nextButton.style.display = "block";
-}
-
-function selectAnswer(e) {
+function stopTimer() {
     clearInterval(timerInterval);
-    stopSounds();
-    
-    const selectedBtn = e.target;
-    const isCorrect = selectedBtn.dataset.correct === "true";
-    if(isCorrect) {
-        selectedBtn.classList.add("correct");
-        score++;
-    } else {
-        selectedBtn.classList.add("incorrect");
-    }
-
-    Array.from(answerButtons.children).forEach(button => {
-        button.disabled = true;
-    });
-    nextButton.style.display = "block";
+    tickSound.pause();
+    tickSound.currentTime = 0;
+    // Reset display
+    timerDisplay.innerText = timerInput.value;
 }
 
-function updateProgressBar() {
-    const progress = ((currentQuestionIndex) / questions.length) * 100;
-    progressBar.style.width = `${progress}%`;
-}
-
-// 6. Navigation & Leaderboard
-function handleNextButton() {
-    currentQuestionIndex++;
-    if(currentQuestionIndex < questions.length) {
-        timerElement.style.display = "inline-block";
-        showQuestionPlaceholder();
+// 6. LEADERBOARD LOGIC (Editable)
+function loadLeaderboard() {
+    const saved = JSON.parse(localStorage.getItem("hostLeaderboard"));
+    if (saved && saved.length > 0) {
+        renderLeaderboard(saved);
     } else {
-        showScore();
+        renderLeaderboard(TEAMS_DEFAULT.map(name => ({ name, score: 0 })));
     }
 }
 
-function showScore() {
-    resetState();
-    startTimerBtn.style.display = "none";
-    timerElement.style.display = "none";
-    questionNumberText.style.display = "none";
+function renderLeaderboard(teams) {
+    lbBody.innerHTML = "";
+    teams.forEach((team, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td contenteditable="true" class="editable name-cell">${team.name}</td>
+            <td contenteditable="true" class="editable score-cell">${team.score}</td>
+        `;
+        lbBody.appendChild(tr);
+    });
     
-    leaderboardSection.style.display = "block";
-    showHighScores();
-}
-
-const highScores = JSON.parse(localStorage.getItem("tepidTeapotHighScores")) || [];
-
-function showHighScores() {
-    highScoresList.innerHTML = highScores
-        .map(score => `<li><span>${score.name}</span> <span>${score.score}</span></li>`)
-        .join("");
-        
-    usernameInput.addEventListener('keyup', () => {
-        saveScoreBtn.disabled = !usernameInput.value;
+    // Add Listeners to save on edit
+    document.querySelectorAll(".editable").forEach(cell => {
+        cell.addEventListener("input", saveLeaderboard);
+        // Sort on Enter key in score
+        cell.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                cell.blur();
+                saveLeaderboard(); // Trigger sort
+            }
+        });
     });
 }
 
-saveScoreBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    const scoreData = { score: score, name: usernameInput.value };
-    highScores.push(scoreData);
-    highScores.sort((a, b) => b.score - a.score);
-    highScores.splice(5);
-    localStorage.setItem("tepidTeapotHighScores", JSON.stringify(highScores));
+function saveLeaderboard() {
+    const rows = Array.from(lbBody.querySelectorAll("tr"));
+    let data = rows.map(row => ({
+        name: row.querySelector(".name-cell").innerText,
+        score: parseInt(row.querySelector(".score-cell").innerText) || 0
+    }));
     
-    showHighScores();
-    usernameInput.value = "";
-    saveScoreBtn.disabled = true;
+    // Sort by Score Descending
+    data.sort((a, b) => b.score - a.score);
+    
+    localStorage.setItem("hostLeaderboard", JSON.stringify(data));
+    
+    // Only re-render if order changed (avoid losing focus while typing)
+    // For simplicity, we only re-render on page load or explicit sort button, 
+    // but here we allow loose typing.
+}
+
+addTeamBtn.addEventListener("click", () => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+        <td>-</td>
+        <td contenteditable="true" class="editable name-cell">New Team</td>
+        <td contenteditable="true" class="editable score-cell">0</td>
+    `;
+    lbBody.appendChild(tr);
+    saveLeaderboard();
+    // Re-render to add listeners
+    loadLeaderboard(); 
 });
 
-restartBtn.addEventListener("click", () => {
-    // Re-fetch questions to get updates or re-shuffle
-    initGame();
-});
-
-nextButton.addEventListener("click", () => {
-    if(currentQuestionIndex < questions.length) {
-        handleNextButton();
-    } else {
-        // Restarting requires re-init to reset listeners correctly
-        initGame();
+resetLbBtn.addEventListener("click", () => {
+    if(confirm("Reset all scores to 0?")) {
+        localStorage.removeItem("hostLeaderboard");
+        loadLeaderboard();
     }
 });
 
 // START
-initGame();
+init();
