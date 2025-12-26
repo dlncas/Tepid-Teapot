@@ -1,35 +1,6 @@
-// 1. DATA: Add your real Tepid Teapot questions here!
-const questions = [
-    {
-        question: "In the 2024 Teapot contest, which shape won 'Most Aerodynamic'?",
-        image: "images/teapot.jpg", // Optional: Delete this line if you have no image
-        answers: [
-            { text: "The Sphere", correct: false },
-            { text: "The Flat Spout", correct: true },
-            { text: "The Cube", correct: false },
-            { text: "The Pyramid", correct: false },
-        ]
-    },
-    {
-        question: "What is the optimal water temperature for Earl Grey?",
-        // No image property here, so it will just show text
-        answers: [
-            { text: "100°C (Boiling)", correct: false },
-            { text: "90-95°C", correct: true },
-            { text: "80°C", correct: false },
-            { text: "Ice Cold", correct: false },
-        ]
-    },
-    {
-        question: "Which country consumes the most tea per capita?",
-        answers: [
-            { text: "United Kingdom", correct: false },
-            { text: "China", correct: false },
-            { text: "Turkey", correct: true },
-            { text: "India", correct: false },
-        ]
-    }
-];
+// 1. CONFIGURATION
+// PASTE YOUR GOOGLE SHEET CSV LINK HERE!
+const GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkB-VFvdDRm-bWJDxliTPUE3QnOMuCIM9BR7i4ypvX-sp5fwnW3TPFA4KLNBK44qDVfkdvkEdqzQI9/pub?output=csv";
 
 // 2. DOM Elements
 const questionNumberText = document.getElementById("question-number");
@@ -50,19 +21,63 @@ const usernameInput = document.getElementById("username");
 const saveScoreBtn = document.getElementById("save-score-btn");
 const restartBtn = document.getElementById("restart-btn");
 
+let questions = []; // Will be filled from Google Sheets
 let currentQuestionIndex = 0;
 let score = 0;
 let timeLeft = 10;
 let timerInterval;
-const MAX_HIGH_SCORES = 5;
 
-// 3. Main Functions
+// 3. FETCH DATA & INIT
+function initGame() {
+    startTimerBtn.innerHTML = "Loading Questions...";
+    startTimerBtn.disabled = true;
 
+    Papa.parse(GOOGLE_SHEET_URL, {
+        download: true,
+        header: true,
+        complete: function(results) {
+            // Process the CSV data into our format
+            questions = results.data
+                .filter(row => row.Question) // Remove empty rows
+                .map(row => ({
+                    question: row.Question,
+                    image: row.ImageURL || null,
+                    answers: [
+                        { text: row.Option1, correct: row.Option1 === row.CorrectAnswer },
+                        { text: row.Option2, correct: row.Option2 === row.CorrectAnswer },
+                        { text: row.Option3, correct: row.Option3 === row.CorrectAnswer },
+                        { text: row.Option4, correct: row.Option4 === row.CorrectAnswer }
+                    ]
+                }));
+
+            // Shuffle questions (Optional - removes predictability)
+            questions.sort(() => Math.random() - 0.5);
+
+            // Ready to start
+            startTimerBtn.innerHTML = "Start Quiz";
+            startTimerBtn.disabled = false;
+            
+            // Add click listener now that data is ready
+            startTimerBtn.addEventListener("click", startQuiz);
+        }
+    });
+}
+
+// 4. MAIN GAME LOGIC
 function startQuiz() {
+    // If coming from "Reveal Question" button, handle differently
+    if (questions.length === 0) return; 
+
+    // Reset game state
     currentQuestionIndex = 0;
     score = 0;
     leaderboardSection.style.display = "none";
     nextButton.innerHTML = "Next";
+    
+    // Change button purpose
+    startTimerBtn.removeEventListener("click", startQuiz);
+    startTimerBtn.addEventListener("click", revealQuestion);
+    
     showQuestionPlaceholder();
 }
 
@@ -70,18 +85,16 @@ function showQuestionPlaceholder() {
     resetState();
     updateProgressBar();
     
-    // Show Big Number
     questionNumberText.style.display = "block";
     questionNumberText.innerHTML = "Question " + (currentQuestionIndex + 1);
     
-    // Ensure button is ready
     startTimerBtn.innerHTML = "Reveal Question";
     startTimerBtn.style.display = "block";
 }
 
 function revealQuestion() {
     startTimerBtn.style.display = "none";
-    questionNumberText.style.display = "none"; // Hide big number
+    questionNumberText.style.display = "none";
     
     questionText.style.display = "block";
     answerButtons.style.display = "block";
@@ -90,7 +103,7 @@ function revealQuestion() {
     questionText.innerHTML = (currentQuestionIndex + 1) + ". " + currentQuestion.question;
 
     // Handle Image
-    if (currentQuestion.image) {
+    if (currentQuestion.image && currentQuestion.image.trim() !== "") {
         questionImage.src = currentQuestion.image;
         questionImage.style.display = "block";
     } else {
@@ -103,7 +116,7 @@ function revealQuestion() {
         button.innerHTML = answer.text;
         button.classList.add("btn");
         answerButtons.appendChild(button);
-        if(answer.correct) button.dataset.correct = answer.correct;
+        if(answer.correct) button.dataset.correct = "true";
         button.addEventListener("click", selectAnswer);
     });
 
@@ -129,11 +142,9 @@ function resetState() {
     }
 }
 
-// 4. Timer & Sound Logic
-startTimerBtn.addEventListener("click", revealQuestion);
-
+// 5. Timer & Sounds
 function startTimer() {
-    try { tickSound.play().catch(e => console.log("Audio play failed (no interaction yet)")); } catch(e){}
+    try { tickSound.play().catch(e => {}); } catch(e){}
     
     timerInterval = setInterval(() => {
         timeLeft--;
@@ -152,10 +163,8 @@ function startTimer() {
 }
 
 function stopSounds() {
-    tickSound.pause();
-    tickSound.currentTime = 0;
-    alarmSound.pause();
-    alarmSound.currentTime = 0;
+    if(tickSound) { tickSound.pause(); tickSound.currentTime = 0; }
+    if(alarmSound) { alarmSound.pause(); alarmSound.currentTime = 0; }
 }
 
 function handleTimeUp() {
@@ -187,13 +196,12 @@ function selectAnswer(e) {
     nextButton.style.display = "block";
 }
 
-// 5. Progress Bar
 function updateProgressBar() {
     const progress = ((currentQuestionIndex) / questions.length) * 100;
     progressBar.style.width = `${progress}%`;
 }
 
-// 6. Ending & Leaderboard
+// 6. Navigation & Leaderboard
 function handleNextButton() {
     currentQuestionIndex++;
     if(currentQuestionIndex < questions.length) {
@@ -214,7 +222,6 @@ function showScore() {
     showHighScores();
 }
 
-// 7. Local Storage Leaderboard Logic
 const highScores = JSON.parse(localStorage.getItem("tepidTeapotHighScores")) || [];
 
 function showHighScores() {
@@ -222,7 +229,6 @@ function showHighScores() {
         .map(score => `<li><span>${score.name}</span> <span>${score.score}</span></li>`)
         .join("");
         
-    // Enable save button only if they type a name
     usernameInput.addEventListener('keyup', () => {
         saveScoreBtn.disabled = !usernameInput.value;
     });
@@ -230,34 +236,30 @@ function showHighScores() {
 
 saveScoreBtn.addEventListener('click', (e) => {
     e.preventDefault();
-
-    const scoreData = {
-        score: score,
-        name: usernameInput.value
-    };
-
+    const scoreData = { score: score, name: usernameInput.value };
     highScores.push(scoreData);
-    highScores.sort((a, b) => b.score - a.score); // Sort highest first
-    highScores.splice(5); // Keep only top 5
-
+    highScores.sort((a, b) => b.score - a.score);
+    highScores.splice(5);
     localStorage.setItem("tepidTeapotHighScores", JSON.stringify(highScores));
     
-    showHighScores(); // Refresh list
-    usernameInput.value = ""; // Clear input
-    saveScoreBtn.disabled = true; // Disable button again
+    showHighScores();
+    usernameInput.value = "";
+    saveScoreBtn.disabled = true;
 });
 
 restartBtn.addEventListener("click", () => {
-    startQuiz();
+    // Re-fetch questions to get updates or re-shuffle
+    initGame();
 });
 
 nextButton.addEventListener("click", () => {
     if(currentQuestionIndex < questions.length) {
         handleNextButton();
     } else {
-        startQuiz();
+        // Restarting requires re-init to reset listeners correctly
+        initGame();
     }
 });
 
-// Start
-startQuiz();
+// START
+initGame();
