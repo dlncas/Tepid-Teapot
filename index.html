@@ -47,7 +47,11 @@
                 <div class="controls-area">
                     <div class="nav-controls">
                         <button id="btn-prev" class="ctrl-btn secondary">◀ Back</button>
+                        
+                        <button id="btn-reveal" class="ctrl-btn accent-btn" style="display:none;">Reveal Answer</button>
+
                         <button id="btn-action" class="ctrl-btn primary">Reveal Question</button>
+                        
                         <button id="btn-next" class="ctrl-btn secondary">Next ▶</button>
                     </div>
                     
@@ -61,14 +65,14 @@
 
         <aside class="leaderboard-panel">
             <h2>🏆 Leaderboard</h2>
-            <p class="sub-text">Click names/scores to edit</p>
+            <p class="sub-text">Use arrows or click to edit</p>
             
             <table class="lb-table">
                 <thead>
                     <tr>
-                        <th>#</th>
+                        <th style="width:30px">#</th>
                         <th>Team Name</th>
-                        <th>Score</th>
+                        <th style="width:120px; text-align:center;">Score</th>
                     </tr>
                 </thead>
                 <tbody id="lb-body">
